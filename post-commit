@@ -10,7 +10,7 @@
 
 # PROJECTNAME is used to identify you temporary files and dirs. Should be
 # unique.
-PROJECTNAME="game"
+PROJECTNAME="project"
 
 # Current branch used to synchronize web-server. Use full path from repository
 # for this variable, for example, 'trunk' or 'branches/experimental'
