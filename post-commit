@@ -1,0 +1,152 @@
+#!/bin/sh
+#
+# Subversion post-commit hook.
+#
+# This script will update files on the the web-server transparently using rsync
+
+#------------------------------------------------------------------------------
+# Project settings. You should at least specify these.
+#------------------------------------------------------------------------------
+
+# PROJECTNAME is used to identify you temporary files and dirs. Should be
+# unique.
+PROJECTNAME="game"
+
+# Current branch used to synchronize web-server. Use full path from repository
+# for this variable, for example, 'trunk' or 'branches/experimental'
+BRANCH="trunk"
+
+# The root directory where your web server is pointed at.
+TARGETDIR="/opt/$PROJECTNAME"
+
+#------------------------------------------------------------------------------
+# SVN path URLs These are passed to the post-commit hook.
+#------------------------------------------------------------------------------
+REV=$2
+REPOS=$1
+
+#------------------------------------------------------------------------------
+# Other settings (PATHs, logging, etc)
+#------------------------------------------------------------------------------
+
+# PATH tells the shell where to look for executables.
+PATH="/usr/local/bin:/usr/bin:/bin"
+
+# TEMPDIR is used for checkout the project. It then will be used to sync the
+# web server dir from.
+TEMPDIR="/var/tmp/$USER/$PROJECTNAME"
+
+# LOCKFILE stores the revision name which web server is currently updated to. 
+LOCKFILE="$TEMPDIR/$PROJECTNAME.lock"
+
+# LOGFILE stores the operation log
+LOGFILE="$TEMPDIR/$PROJECTNAME.log"
+
+# LOGLEVEL sets the verbosity of logging to logfile. Supported values are:
+# 0 - None
+# 1 - Error
+# 2 - Warning
+# 3 - Notice
+# 4 - Info
+LOGLEVEL=4
+
+# SVN_LOGLEVEL is similar to LOGLEVEL except it controls the verbocity of
+# messages printed to SVN client.
+SVNLOGLEVEL=2
+
+# PREFIXLOG specifies additional info logged before the actual message
+PREFIXLOG="$BRANCH r$REV"
+
+#------------------------------------------------------------------------------
+# Logging functions
+#------------------------------------------------------------------------------
+
+log_msg() {
+    local LEVEL=$1
+    local MESSAGE=$2
+
+    if [ $LOGLEVEL -le $LOGLEVEL ] ; then
+        echo \[`date`\] "$PREFIXLOG " "$@" >> $LOGFILE
+    fi
+
+    if [ $LOGLEVEL -le $SVNLOGLEVEL ] ; then
+        echo "$@" >&2
+    fi
+}
+
+log_info() {
+    log_msg 4 "$*"
+}
+
+log_notice() {
+    log_msg 3 "$*"
+}
+
+log_warning() {
+    log_msg 2 "$*"
+}
+
+log_error() {
+    log_msg 1 "$*"
+}
+
+
+#------------------------------------------------------------------------------
+# Main starts here
+#------------------------------------------------------------------------------
+# Check if some update is already running. If this update has revision older
+# than revision we want to update then just wait until lock is freezed or new
+# update is taking place.
+
+log_notice "UPDATE rev. $REV START"
+
+if [ ! -d "$TEMPDIR" ] ; then
+    log_warning "TEMPDIR not found. Creating one"
+    mkdir "$TEMPDIR"
+fi
+
+while [ -f "$LOCKFILE" ] ; do
+    UPD_REV=`cat $LOCKFILE`
+    log_info "UPDATE $UPD_REV is taking place"
+
+    if [ "$LOCK_REV" -lt "$UPD_REV" ] ; then
+        log_notice "UPDATE to older rev. $LOCK_REV is done"
+        exit 0
+    fi
+
+    sleep 1
+done
+
+log_notice "Updating temporary working copy"
+echo "$REV" > "$LOCKFILE"
+
+if [ ! -d "$TEMPDIR/$BRANCH" ] ; then
+    log_warning "TEMPDIR not found. Creating one"
+    mkdir "$TEMPDIR/$BRANCH"
+    if [ $? -ne 0 ] ; then
+        log_error "Cannot create directory: $TEMPDIR"
+        exit 1
+    fi
+    svn co "file://$REPOS/$BRANCH" "$TEMPDIR/$BRANCH"
+    if [ $? -ne 0 ] ; then
+        log_error "Cannot checkout repository: $REPOS"
+        exit 1
+    fi
+fi
+svn update -r $REV "$TEMPDIR/$BRANCH"
+if [ $? -ne 0 ] ; then
+    log_error "Cannot update repository: $REPOS"
+    exit 1
+fi
+
+log_notice "Applying changes to target dir" 
+rsync --delete -rv --exclude=.svn "$TEMPDIR/$BRANCH/" "$TARGETDIR"
+if [ $? -ne 0 ] ; then
+    log_error "Cannot update target dir: $TARGETDIR"
+    exit 1
+fi
+
+rm "$LOCKFILE"
+log_notice "UPDATE rev. $REV END"
+
+exit 0
