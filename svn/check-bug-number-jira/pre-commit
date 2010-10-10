@@ -3,9 +3,9 @@
 REPOS="$1"
 TXN="$2"
 
-# Current project's bug prefix (JIRA creates bugs named after projects short
-# unique name and the issue number, for example PRJ-123)
-JIRA_PREFIX="PRJ"
+# Current project's bug prefix (JIRA creates bugs named after project's key and 
+# the issue number, for example PRJ-123)
+JIRA_KEY="PRJ"
 
 # JIRA connection settings:
 JIRA_XMLRPC="https://jira-server/rpc/xmlrpc"
@@ -19,7 +19,7 @@ SVNLOOK=/usr/bin/svnlook
 # passwd as arguments since anyone on the server can see them( for example with
 # `ps aux` command). Better way of setting up credentials will be passing a
 # file holding them with restricted rights. But this is how it is now.
-ISSUE=`$SVNLOOK log -t "$TXN" "$REPOS" | egrep -o "$JIRA_PREFIX-[0-9]+"`
+ISSUE=`$SVNLOOK log -t "$TXN" "$REPOS" | egrep -o "$JIRA_KEY-[0-9]+"`
 check_jira_issue.py -U "$JIRA_XMLRPC" -u "$JIRA_USER" -p "$JIRA_PASSWORD" \
     $ISSUE >&2 || exit 1
 
