@@ -1,0 +1,27 @@
+#!/bin/sh
+
+REPOS="$1"
+TXN="$2"
+
+# Current project's bug prefix (JIRA creates bugs named after projects short
+# unique name and the issue number, for example PRJ-123)
+JIRA_PREFIX="PRJ"
+
+# JIRA connection settings:
+JIRA_XMLRPC="https://jira-server/rpc/xmlrpc"
+JIRA_USER="username"
+JIRA_PASSWORD="password"
+
+SVNLOOK=/usr/bin/svnlook
+
+# Check that JIRA issue is set properly
+# Note: it's a known security problem to run some script with credentials
+# passwd as arguments since anyone on the server can see them( for example with
+# `ps aux` command). Better way of setting up credentials will be passing a
+# file holding them with restricted rights. But this is how it is now.
+ISSUE=`$SVNLOOK log -t "$TXN" "$REPOS" | egrep -o "$JIRA_PREFIX-[0-9]+"`
+check_jira_issue.py -U "$JIRA_XMLRPC" -u "$JIRA_USER" -p "$JIRA_PASSWORD" \
+    $ISSUE >&2 || exit 1
+
+# All checks passed, so allow the commit.
+exit 0
