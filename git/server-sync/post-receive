@@ -49,6 +49,7 @@ update_server() {
     local BRANCH=${1##*/}
     local OLDREV=$2
     local NEWREV=$3
+    local SERVER_NAME=$4
     local TARGET=
 
     # detect wether local or remote synchronization is needed
@@ -59,7 +60,7 @@ update_server() {
             echo "REMOTE_USER not set. Cannot perform remote sync."
             exit 1
         fi
-        TARGET=$REMOTE_USER@$4:$TARGETDIR
+        TARGET=$REMOTE_USER@$SERVER_NAME:$TARGETDIR
     fi
 
     echo Preparing branch $BRANCH for sync with server
