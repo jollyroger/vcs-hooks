@@ -13,10 +13,6 @@
 # unique.
 PROJECTNAME="project"
 
-# Current branch used to synchronize web-server. Use full path from repository
-# for this variable, for example, 'trunk' or 'branches/experimental'
-BRANCH="trunk"
-
 # The root directory where your web server is pointed at.
 TARGETDIR="/opt/$PROJECTNAME"
 
@@ -32,12 +28,15 @@ REFNAME_PREFIX=refs/heads
 
 # Branch which synchronizes with the development server
 DEVELOPMENT_REFNAME=$REFNAME_PREFIX/master
+DEVELOPMENT_SERVER="development.example.com"
 
 # Branch which synchronizes with the testing server
 TESTING_REFNAME=$REFNAME_PREFIX/staging
+TESTING_SERVER="testing.example.com"
 
 # Branch which synchronizes with the production server
 PRODUCTION_REFNAME=$REFNAME_PREFIX/stable
+PRODUCTION_SERVER="production.example.com"
 
 #------------------------------------------------------------------------------
 # Function which updates the server
@@ -93,13 +92,13 @@ do
     SERVER_NAME=
     case $refname in
         $DEVELOPMENT_REFNAME  )
-            SERVER_NAME="development.example.com"
+            SERVER_NAME="$DEVELOPMENT_SERVER"
             ;;
         $TESTING_REFNAME )
-            SERVER_NAME="testing.example.com"
+            SERVER_NAME="$TESTING_SERVER"
             ;;
         $PRODUCTION_REFNAME ) 
-            SERVER_NAME="production.example.com"
+            SERVER_NAME="$PRODUCTION_SERVER"
             ;;
         *)
             echo Skipping server update for branch $refname
