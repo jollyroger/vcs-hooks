@@ -1,29 +1,58 @@
-# Git post-receive hook for server synchronization
+# Git post-receive hook for server deployment
+
+This hook performes local and remote deployment on per-branch basis
 
 ## Requirements
 
 *   rsync
-*   ssh client (for remote synchronization)
+*   ssh client (for remote deployment)
 
-## Configuration items:
+## Configuration items
 
-*   `PROJECTNAME` --- custom name(used for creating temporary files,
-    etc
-*   `TARGETDIR` --- local or remote synchronization path
-*   `REMOTE_USER` --- remote user to log in with
-*   `TEMPDIR_PREFIX` --- temporary dir holding working copy on the
-    VCS server
-*   `REFNAME_PREFIX` --- default prefix (refs/heads for branches)
+Configuration options are stored in `.git/config` file per branch. Script uses
+`git-config` to get the values for each branch.
 
-Currently this hook supports updating up to 3 local/remote servers with the
-same directory and the same login for all servers. However It can be extended
-in future to support arbitrary list of servers.
+*   `branch.<branch_name>.deploy-dir` --- the directory where branch will be
+    deployed to
+*   `branch.<branch_name>.deploy-server` --- remote server name (optional)
+*   `branch.<branch_name>.deploy-user` --- remote user name (optional)
 
-There are special variables to set up a repository for each server/envioronment:
+While validating the values the following rules are applied:
 
-*   `DEVELOPMENT_REFNAME`, `DEVELOPMENT_SERVER` --- branch name and server name
-    used to synchronize development environment
-*   `TESTING_REFNAME`, `TESTING_SERVER` --- same variables for testing
-    environment
-*   `PRODUCTION_REFNAME`, `PRODUCTION_SERVER` --- same variables for testing
-    environment
+*   at least `deploy-dir` must be set if you want the branch to be deployed
+*   if no `deploy-server` specified then local deployment assumed
+*   if no `deploy-user` specified then current user assumed. Only used for
+    remote deployment
+
+## Examples
+
+### Case 1. Local deployment
+
+Sample configuration might look like this:
+
+    [branch "local-deploy"]
+        deploy-dir = /path/to/dir
+
+In this case deployment wil be performed locally. Don't forget to check rights
+on a target directory.
+
+You also can deploy as another user using `localhost` as a remote server
+described in the next case.
+
+### Case 2. Remote deployment
+
+Configuration file will be as follows:
+
+    [branch "remote-deploy"]
+        deploy-server = example.com
+        deploy-dir = /path/to/dir
+
+Note that you will need to set up a passwordless SSH access to the remote
+server using SSH keys.
+
+It is possible to specify the remote user with `deploy-user` option:
+
+    [branch "remote-deploy"]
+        deploy-server = example.com
+        deploy-dir = /path/to/dir
+        deploy-user = user
