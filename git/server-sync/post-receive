@@ -5,38 +5,8 @@
 # This script will update files on the the web-server transparently using rsync
 # remotely or on the local machine
 
-#------------------------------------------------------------------------------
-# Project settings. You should at least specify these.
-#------------------------------------------------------------------------------
-
-# PROJECTNAME is used to identify you temporary files and dirs. Should be
-# unique.
-PROJECTNAME="project"
-
-# The root directory where your web server is pointed at.
-TARGETDIR="/opt/$PROJECTNAME"
-
-# Remote user to connect with (not necessary for local synchronization)
-REMOTE_USER=user
-
-# TEMPDIR is used for checkout the project. It then will be used to sync the
-# web server dir from.
-TEMPDIR_PREFIX=/var/tmp/$USER/$PROJECTNAME
-
 # This is a common prefix for a refname in git
 REFNAME_PREFIX=refs/heads
-
-# Branch which synchronizes with the development server
-DEVELOPMENT_REFNAME=$REFNAME_PREFIX/master
-DEVELOPMENT_SERVER="development.example.com"
-
-# Branch which synchronizes with the testing server
-TESTING_REFNAME=$REFNAME_PREFIX/staging
-TESTING_SERVER="testing.example.com"
-
-# Branch which synchronizes with the production server
-PRODUCTION_REFNAME=$REFNAME_PREFIX/stable
-PRODUCTION_SERVER="production.example.com"
 
 #------------------------------------------------------------------------------
 # Function which updates the server
@@ -46,38 +16,41 @@ PRODUCTION_SERVER="production.example.com"
 # update is taking place.
 
 update_server() {
+    local TARGET=
     local BRANCH=${1##*/}
     local OLDREV=$2
     local NEWREV=$3
-    local SERVER_NAME=$4
-    local TARGET=
+
+    local DEPLOY_SERVER=`git-config --get branch.$BRANCH.deploy_server`
+    local DEPLOY_DIR=`git-config --get branch.$BRANCH.deploy_dir`
+    local DEPLOY_USER=`git-config --get branch.$BRANCH.deploy_user`
+
+    # Check wether deployment
+    if [ -z "$DEPLOY_DIR" ] ; then
+        return 1
+    fi
 
     # detect wether local or remote synchronization is needed
-    if [ -z "$4" -o "$4" = "localhost" ] ; then
-        TARGET=$TARGETDIR
+    if [ -z "DEPLOY_SERVER" ] ; then
+        TARGET="$DEPLOY_DIR"
     else
-        if [ -z $REMOTE_USER ] ; then
-            echo "REMOTE_USER not set. Cannot perform remote sync."
-            exit 1
+        if [ -z "$DEPLOY_USER" ] ; then
+        else
+            TARGET="$DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_DIR"
         fi
-        TARGET=$REMOTE_USER@$SERVER_NAME:$TARGETDIR
+            TARGET="$DEPLOY_SERVER:$DEPLOY_DIR"
     fi
 
     echo Preparing branch $BRANCH for sync with server
-    TEMPDIR=$TEMPDIR_PREFIX/$BRANCH
-    if [ ! -d "$TEMPDIR_PREFIX" ] ; then
-        echo TEMPDIR not found. Creating one
-        mkdir -p $TEMPDIR_PREFIX
-    fi
+    TEMPDIR=`mktemp -d`
 
-    mkdir $TEMPDIR
-    git archive $NEWREV|tar xf - -C $TEMPDIR 
+    git archive $NEWREV|tar xf - -C $TEMPDIR
 
-    echo Sync with server 
-    rsync -rcv --delete $TEMPDIR/ $TARGET
+    echo Sync with server
+    rsync -rcv --delete $TEMPDIR/ $TARGET/
 
     echo Cleaning..
-    cd .. && rm -fR $TEMPDIR
+    rm -fR $TEMPDIR
 
     echo Done
 }
@@ -88,24 +61,7 @@ update_server() {
 # Get the changes in branches and initiate the deployment one by one (if there
 # are any changes on the respective branches).
 
-while read oldrev newrev refname 
+while read oldrev newrev refname
 do
-    SERVER_NAME=
-    case $refname in
-        $DEVELOPMENT_REFNAME  )
-            SERVER_NAME="$DEVELOPMENT_SERVER"
-            ;;
-        $TESTING_REFNAME )
-            SERVER_NAME="$TESTING_SERVER"
-            ;;
-        $PRODUCTION_REFNAME ) 
-            SERVER_NAME="$PRODUCTION_SERVER"
-            ;;
-        *)
-            echo Skipping server update for branch $refname
-            continue
-            ;;
-    esac
-
-    update_server $refname $oldrev $newrev $SERVER_NAME 
+    update_server $refname $oldrev $newrev
 done
