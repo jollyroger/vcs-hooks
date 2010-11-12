@@ -35,10 +35,9 @@ update_server() {
         TARGET="$DEPLOY_DIR"
     else
         if [ -z "$DEPLOY_USER" ] ; then
-            TARGET="$DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_DIR"
-        else
-            TARGET="$DEPLOY_SERVER:$DEPLOY_DIR"
+            DEPLOY_USER=$USER
         fi
+        TARGET="$DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_DIR"
     fi
 
     echo Preparing branch $BRANCH for sync with server
