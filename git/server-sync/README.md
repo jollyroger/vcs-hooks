@@ -12,16 +12,16 @@ This hook performes local and remote deployment on per-branch basis
 Configuration options are stored in `.git/config` file per branch. Script uses
 `git-config` to get the values for each branch.
 
-*   `branch.<branch_name>.deploy_dir` --- the directory where branch will be
+*   `branch.<branch_name>.deploy-dir` --- the directory where branch will be
     deployed to
-*   `branch.<branch_name>.deploy_server` --- remote server name (optional)
-*   `branch.<branch_name>.deploy_user` --- remote user name (optional)
+*   `branch.<branch_name>.deploy-server` --- remote server name (optional)
+*   `branch.<branch_name>.deploy-user` --- remote user name (optional)
 
 While validating the values the following rules are applied:
 
-*   at least `deploy_dir` must be set if you want the branch to be deployed
-*   if no `deploy_server` specified then local deployment assumed
-*   if no `deploy_user` specified then current user assumed. Only used for
+*   at least `deploy-dir` must be set if you want the branch to be deployed
+*   if no `deploy-server` specified then local deployment assumed
+*   if no `deploy-user` specified then current user assumed. Only used for
     remote deployment
 
 ## Examples
@@ -31,7 +31,7 @@ While validating the values the following rules are applied:
 Sample configuration might look like this:
 
     [branch "local-deploy"]
-        deploy_dir = /path/to/dir
+        deploy-dir = /path/to/dir
 
 In this case deployment wil be performed locally. Don't forget to check rights
 on a target directory.
@@ -44,15 +44,15 @@ described in the next case.
 Configuration file will be as follows:
 
     [branch "remote-deploy"]
-        deploy_server = example.com
-        deploy_dir = /path/to/dir
+        deploy-server = example.com
+        deploy-dir = /path/to/dir
 
 Note that you will need to set up a passwordless SSH access to the remote
 server using SSH keys.
 
-It is possible to specify the remote user with `deploy_user` option:
+It is possible to specify the remote user with `deploy-user` option:
 
     [branch "remote-deploy"]
-        deploy_server = example.com
-        deploy_dir = /path/to/dir
-        deploy_user = user
+        deploy-server = example.com
+        deploy-dir = /path/to/dir
+        deploy-user = user

@@ -21,9 +21,9 @@ update_server() {
     local OLDREV=$2
     local NEWREV=$3
 
-    local DEPLOY_SERVER=`git-config --get branch.$BRANCH.deploy_server`
-    local DEPLOY_DIR=`git-config --get branch.$BRANCH.deploy_dir`
-    local DEPLOY_USER=`git-config --get branch.$BRANCH.deploy_user`
+    local DEPLOY_SERVER=`git-config --get branch.$BRANCH.deploy-server`
+    local DEPLOY_DIR=`git-config --get branch.$BRANCH.deploy-dir`
+    local DEPLOY_USER=`git-config --get branch.$BRANCH.deploy-user`
 
     # Check wether deployment
     if [ -z "$DEPLOY_DIR" ] ; then
@@ -31,14 +31,14 @@ update_server() {
     fi
 
     # detect wether local or remote synchronization is needed
-    if [ -z "DEPLOY_SERVER" ] ; then
+    if [ -z "$DEPLOY_SERVER" ] ; then
         TARGET="$DEPLOY_DIR"
     else
         if [ -z "$DEPLOY_USER" ] ; then
-        else
             TARGET="$DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_DIR"
-        fi
+        else
             TARGET="$DEPLOY_SERVER:$DEPLOY_DIR"
+        fi
     fi
 
     echo Preparing branch $BRANCH for sync with server
