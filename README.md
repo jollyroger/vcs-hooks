@@ -1,4 +1,4 @@
-# Useful VCS hooks for different VCS
+# Useful hooks for different VCS
 
 Currently available:
 
