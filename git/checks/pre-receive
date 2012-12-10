@@ -1,0 +1,86 @@
+#!/bin/sh
+#
+# git pre-receive hook.
+#
+# This script will check incoming changes on several common problems (like
+# syntax errors, BOM headers etc) and reject push operation.
+
+# This is a common prefix for a refname in git
+REFNAME_PREFIX=refs/heads
+
+#------------------------------------------------------------------------------
+# Prepare environment and dispose it when done
+#------------------------------------------------------------------------------
+prepare_files() {
+    set -e
+    local OLDREV=$1
+    local NEWREV=$2
+    local BRANCH=${3##*/}
+
+    CHANGED_FILES=`git diff --name-only $OLDREV $NEWREV`
+    TMPDIR=`mktemp -d`
+
+    git archive $NEWREV $CHANGED_FILES |tar xf - -C $TMPDIR
+    echo $TMPDIR
+}
+
+cleanup() {
+    rm -fR $*
+}
+
+#------------------------------------------------------------------------------
+# Check functions
+#------------------------------------------------------------------------------
+check_bom() {
+    echo "Checking for BOM headers started"
+    BOM_REGEX=$'\xEF\xBB\xBF'
+    local FILELIST
+
+    cd $1
+    FILELIST=`find . -type f -print0 | xargs -0r awk '
+        /^\xEF\xBB\xBF/ {print FILENAME "\n"}
+        {nextfile}'`
+
+    if [ -n "$FILELIST" ] ; then
+        echo "ERROR: BOM headers found in following files:"
+        echo $FILELIST
+        return 1
+    fi
+
+    return 0
+}
+
+#------------------------------------------------------------------------------
+# Checks loops
+#------------------------------------------------------------------------------
+rev_checks() {
+    return 0
+}
+
+file_checks() {
+    local OLDREV=$1
+    local NEWREV=$2
+    local BRANCH=${3##*/}
+
+    CHECKENV=`prepare_files $oldrev $newrev $refname`
+
+    check_bom $CHECKENV
+    RESULT=$?
+
+    cleanup $CHECKENV
+
+    if [ $RESULT -ne 0 ] ; then
+        exit 1
+    fi
+}
+#------------------------------------------------------------------------------
+# Main starts here
+#------------------------------------------------------------------------------
+# Get the changes in branches and initiate the deployment one by one (if there
+# are any changes on the respective branches).
+
+while read oldrev newrev refname
+do
+    rev_checks $oldrev $newrev $refname
+    file_checks $oldrev $newrev $refname
+done
