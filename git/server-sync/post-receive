@@ -21,8 +21,8 @@ update_server() {
     local OLDREV=$2
     local NEWREV=$3
 
-    local DEPLOY_SERVER=`git-config -f config --get branch.$BRANCH.deploy-server`
-    local DEPLOY_DIR=`git-config -f config --get branch.$BRANCH.deploy-dir`
+    local DEPLOY_SERVER=`git config -f config --get branch.$BRANCH.deploy-server`
+    local DEPLOY_DIR=`git config -f config --get branch.$BRANCH.deploy-dir`
     local DEPLOY_USER=`git config -f config --get branch.$BRANCH.deploy-user`
 
     # Check wether deployment
