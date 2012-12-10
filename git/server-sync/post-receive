@@ -43,7 +43,7 @@ update_server() {
     echo Preparing branch $BRANCH for sync with server
     TEMPDIR=`mktemp -d`
 
-    git archive $NEWREV|tar xf - -C $TEMPDIR
+    git archive $NEWREV|tar xmf - -C $TEMPDIR
 
     echo Sync with server
     rsync -rcv --delete $TEMPDIR/ $TARGET/
