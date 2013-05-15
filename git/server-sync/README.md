@@ -87,16 +87,16 @@ It is possible to specify the remote user with `deploy-user` option:
 
 ### Case 3. Multiple branches deployment
 
-[branch]
-    deploy-server = example.com
-    deploy-user = user
-    deploy-dir-func = multibranch deploy/branches
-[branch "master"]
-    deploy-dir = deploy/production
-[branch "stable"]
-    deploy-dir = 
-[branch "nondeploy"]
-    deploy-dir = -
+    [branch]
+        deploy-server = example.com
+        deploy-user = user
+        deploy-dir-func = multibranch deploy/branches
+    [branch "master"]
+        deploy-dir = deploy/production
+    [branch "stable"]
+        deploy-dir = 
+    [branch "nondeploy"]
+        deploy-dir = -
 
 In this case we'll have all branches deployed to the directory of the same name
 under `~/deploy/branches`, experimental branch won't be deployed at all and
