@@ -99,7 +99,7 @@ It is possible to specify the remote user with `deploy-user` option:
         deploy-dir = -
 
 In this case we'll have all branches deployed to the directory of the same name
-under `~/deploy/branches`, experimental branch won't be deployed at all and
+under `~/deploy/branches`, nondeploy branch won't be deployed at all and
 master branch will be deployed to a custom directory `~/deploy/production`
 
 The multibranch function is defined inside the hook itself since it is the most
