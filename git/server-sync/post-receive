@@ -1,4 +1,4 @@
-#!/bin/sh
+e!/bin/sh
 #
 # git post-receive hook.
 #
@@ -8,33 +8,104 @@
 # This is a common prefix for a refname in git
 REFNAME_PREFIX=refs/heads
 
+
+#------------------------------------------------------------------------------
+# Get variables from a config file
+#------------------------------------------------------------------------------
+# synopsys: get_config branch key
+# return: echo value if success and exit 0, otherwise echo '-' and exit 1
+get_config() {
+    GET_CONFIG='git config --local --get'
+
+    VALUE=`$GET_CONFIG branch.$1.$2`
+    if [ -n "$VALUE" ] ; then
+        echo $VALUE
+        return 0
+    fi
+
+    VALUE=`$GET_CONFIG branch.$2`
+    if [ -n "$VALUE" ] ; then
+        echo $VALUE
+        return 0
+    fi
+
+    echo '-'
+    return 1
+}
+
+
+#------------------------------------------------------------------------------
+# Get value for deploy-dir variable, either custom or a generated one
+#------------------------------------------------------------------------------
+# synopsys: get_config_dir branch key
+# return: echo value if success and exit 0, otherwise echo '-' and exit 1
+# 
+# This function uses deploy-dir-func (if available) to generate deploy-dir
+# value. If custom deploy-dir variable for the current branch exists, it
+# overrides the generated one.
+get_config_dir() {
+    GET_CONFIG='git config --local --get'
+
+    VALUE=`$GET_CONFIG branch.$1.deploy-dir`
+    if [ -n "$VALUE" ] ; then
+        echo $VALUE
+        return 0
+    fi
+
+    FUNC=`$GET_CONFIG branch.deploy-dir-func`
+    if [ -z "$FUNC" ] ; then
+        echo '-'
+        return 1
+    fi
+
+    VALUE=`echo $1 | eval $FUNC`
+    if [ -n "$VALUE" ] ; then
+        echo $VALUE
+        return 0
+    fi
+
+    echo '-'
+    return 1
+}
+
+#------------------------------------------------------------------------------
+# Simple expansion function
+#------------------------------------------------------------------------------
+multibranch() {
+    read BRANCH
+    echo $1/$BRANCH
+}
+
+
 #------------------------------------------------------------------------------
 # Function which updates the server
 #------------------------------------------------------------------------------
 # Check if some update is already running. If this update has revision older
 # than revision we want to update then just wait until lock is freezed or new
 # update is taking place.
-
 update_server() {
     local TARGET=
     local BRANCH=${1##*/}
     local OLDREV=$2
     local NEWREV=$3
 
-    local DEPLOY_SERVER=`git config -f config --get branch.$BRANCH.deploy-server`
-    local DEPLOY_DIR=`git config -f config --get branch.$BRANCH.deploy-dir`
-    local DEPLOY_USER=`git config -f config --get branch.$BRANCH.deploy-user`
+    # Read specific values for current branch, use default settings if
+    # available.
+    local DEPLOY_DIR=`get_config_dir $BRANCH`
+    local DEPLOY_SERVER=`get_config $BRANCH deploy-server`
+    local DEPLOY_USER=`get_config $BRANCH deploy-user`
 
     # Check wether deployment
-    if [ -z "$DEPLOY_DIR" ] ; then
+    if [ -z "$DEPLOY_DIR" ] || [ "$DEPLOY_DIR" = '-' ] ; then
         return 1
     fi
 
     # detect wether local or remote synchronization is needed
-    if [ -z "$DEPLOY_SERVER" ] ; then
+    if [ -z "$DEPLOY_SERVER" ] || [ "$DEPLOY_SERVER" = '-' ] ; then
+        # enable shell expansion for local environment
         TARGET=`eval echo "$DEPLOY_DIR"`
     else
-        if [ -z "$DEPLOY_USER" ] ; then
+        if [ -z "$DEPLOY_USER" ] || [ "$DEPLOY_USER" = '-' ] ; then
             DEPLOY_USER=$USER
         fi
         TARGET="$DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_DIR"
